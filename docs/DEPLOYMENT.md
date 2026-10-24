@@ -28,15 +28,21 @@ Two platform constraints drive the configuration:
    `ATTACHMENT_STORAGE=database`, which stores attachment bytes in PostgreSQL.
    See [Attachments](#attachments).
 
+> **Function region.** Netlify does not offer an India (Mumbai) function
+> region. The default is Ohio (`cmh`); Singapore (`sin`) is the closest
+> self-serve region to Mumbai. If you move the database to `ap-south-1`, also
+> move the functions to Singapore on a Pro plan, otherwise every query crosses
+> the Atlantic and back. See the Netlify functions region setting.
+
 ## 1. Prepare the database
 
 Use the pooler hostname for your project's region. For this project it is
-`aws-0-ap-northeast-1.pooler.supabase.com` (Tokyo). The pooler username is
+`aws-0-ap-south-1.pooler.supabase.com` (Mumbai). The pooler username is
 `postgres.<project-ref>`, not plain `postgres`.
 
 | Purpose | Host / port | User |
 | --- | --- | --- |
-| Runtime (`DATABASE_URL`) | `aws-0-ap-northeast-1.pooler.supabase.com:6543` | `postgres.<project-ref>` |
+| Runtime (`DATABASE_URL`) | `aws-0-ap-south-1.pooler.supabase.com:6543` | `postgres.<project-ref>` |
 | Migrations (`DIRECT_URL`) | same pooler on `:5432`, or the direct host on `:5432` | same |
 
 Migrations must run from a machine that can reach `DIRECT_URL`. Netlify's build
