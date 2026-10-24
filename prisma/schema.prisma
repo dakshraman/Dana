@@ -1,0 +1,404 @@
+// Dana Company — Multi-Branch Data Management System
+// PostgreSQL schema (Supabase). All timestamps are stored in UTC; date-only
+// business dates use @db.Date. Use Prisma migrations only — never db push in
+// production.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  SUPER_ADMIN
+  REGIONAL_MANAGER
+  BRANCH_MANAGER
+  BRANCH_EMPLOYEE
+}
+
+enum RecordStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  RETURNED
+  ARCHIVED
+}
+
+enum ApprovalAction {
+  SUBMITTED
+  RESUBMITTED
+  APPROVED
+  REJECTED
+  RETURNED
+  ARCHIVED
+  RESTORED
+}
+
+enum FieldType {
+  TEXT
+  TEXTAREA
+  NUMBER
+  DECIMAL
+  DATE
+  BOOLEAN
+  SELECT
+}
+
+enum NotificationType {
+  RECORD_SUBMITTED
+  RECORD_APPROVED
+  RECORD_REJECTED
+  RECORD_RETURNED
+  USER_ASSIGNED
+  SYSTEM
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  DEACTIVATE
+  ACTIVATE
+  LOGIN
+  LOGIN_FAILED
+  LOGOUT
+  SUBMIT
+  APPROVE
+  REJECT
+  RETURN
+  ARCHIVE
+  RESTORE
+  EXPORT
+  SETTINGS_CHANGE
+}
+
+// ---------------------------------------------------------------------------
+// Organisation
+// ---------------------------------------------------------------------------
+
+model Region {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  branches        Branch[]
+  userAssignments UserRegionAssignment[]
+
+  @@index([name])
+}
+
+model Branch {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  name          String
+  country       String
+  state         String
+  city          String
+  address       String
+  contactPerson String
+  email         String
+  phone         String
+  regionId      String
+  managerId     String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  region      Region                 @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  manager     User?                  @relation("BranchManager", fields: [managerId], references: [id], onDelete: SetNull)
+  assignments UserBranchAssignment[]
+  records     DataRecord[]
+  counters    RecordCounter[]
+
+  @@index([regionId])
+  @@index([country, state, city])
+  @@index([isActive])
+  @@index([name])
+}
+
+// ---------------------------------------------------------------------------
+// Identity & access
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  role         UserRole  @default(BRANCH_EMPLOYEE)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  managedBranches   Branch[]               @relation("BranchManager")
+  branchAssignments UserBranchAssignment[]
+  regionAssignments UserRegionAssignment[]
+
+  createdRecords   DataRecord[]       @relation("RecordCreatedBy")
+  updatedRecords   DataRecord[]       @relation("RecordUpdatedBy")
+  submittedRecords DataRecord[]       @relation("RecordSubmittedBy")
+  approvedRecords  DataRecord[]       @relation("RecordApprovedBy")
+  approvalActions  ApprovalHistory[]
+  attachments      Attachment[]
+  notifications    Notification[]
+  auditLogs        AuditLog[]
+  settingsUpdated  SystemSetting[]     @relation("SettingsUpdatedBy")
+
+  @@index([role, isActive])
+  @@index([name])
+}
+
+model UserBranchAssignment {
+  id        String   @id @default(cuid())
+  userId    String
+  branchId  String
+  isPrimary Boolean  @default(false)
+  jobTitle  String?
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, branchId])
+  @@index([branchId])
+  @@index([userId])
+}
+
+model UserRegionAssignment {
+  id        String   @id @default(cuid())
+  userId    String
+  regionId  String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  region Region @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, regionId])
+  @@index([regionId])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Configurable data recording
+// ---------------------------------------------------------------------------
+
+model RecordCategory {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  fields  CustomFieldDefinition[]
+  records DataRecord[]
+
+  @@index([isActive, sortOrder])
+}
+
+model CustomFieldDefinition {
+  id          String    @id @default(cuid())
+  categoryId  String
+  key         String
+  label       String
+  type        FieldType
+  required    Boolean   @default(false)
+  options     Json?
+  placeholder String?
+  helpText    String?
+  minValue    Decimal?  @db.Decimal(18, 4)
+  maxValue    Decimal?  @db.Decimal(18, 4)
+  maxLength   Int?
+  sortOrder   Int       @default(0)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  category RecordCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  values   RecordValue[]
+
+  @@unique([categoryId, key])
+  @@index([categoryId, sortOrder])
+}
+
+model DataRecord {
+  id              String       @id @default(cuid())
+  recordNumber    String       @unique
+  branchId        String
+  categoryId      String
+  recordDate      DateTime     @db.Date
+  title           String
+  referenceNumber String?
+  remarks         String?
+  status          RecordStatus @default(DRAFT)
+  createdById     String
+  updatedById     String
+  submittedById   String?
+  submittedAt     DateTime?
+  approvedById    String?
+  approvedAt      DateTime?
+  archivedAt      DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  branch      Branch            @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  category    RecordCategory    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  createdBy   User              @relation("RecordCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedBy   User              @relation("RecordUpdatedBy", fields: [updatedById], references: [id], onDelete: Restrict)
+  submittedBy User?             @relation("RecordSubmittedBy", fields: [submittedById], references: [id], onDelete: SetNull)
+  approvedBy  User?             @relation("RecordApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  values      RecordValue[]
+  approvals   ApprovalHistory[]
+  attachments Attachment[]
+
+  @@index([branchId, status, recordDate])
+  @@index([categoryId, recordDate])
+  @@index([status, submittedAt])
+  @@index([recordDate])
+  @@index([createdById])
+  @@index([archivedAt])
+  @@index([referenceNumber])
+}
+
+model RecordValue {
+  id                String    @id @default(cuid())
+  recordId          String
+  fieldDefinitionId String
+  valueText         String?
+  valueNumber       Decimal?  @db.Decimal(18, 4)
+  valueDate         DateTime? @db.Date
+  valueBoolean      Boolean?
+  valueJson         Json?
+
+  record          DataRecord             @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  fieldDefinition CustomFieldDefinition  @relation(fields: [fieldDefinitionId], references: [id], onDelete: Restrict)
+
+  @@unique([recordId, fieldDefinitionId])
+  @@index([fieldDefinitionId])
+}
+
+model RecordCounter {
+  branchId   String
+  year       Int
+  lastNumber Int      @default(0)
+  updatedAt  DateTime @updatedAt
+
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@id([branchId, year])
+}
+
+// ---------------------------------------------------------------------------
+// Workflow
+// ---------------------------------------------------------------------------
+
+model ApprovalHistory {
+  id         String         @id @default(cuid())
+  recordId   String
+  actorId    String
+  action     ApprovalAction
+  fromStatus RecordStatus?
+  toStatus   RecordStatus
+  comment    String?
+  createdAt  DateTime       @default(now())
+
+  record DataRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  actor  User       @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([recordId, createdAt])
+  @@index([actorId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+}
+
+model Attachment {
+  id           String   @id @default(cuid())
+  recordId     String
+  fileName     String
+  storageKey   String   @unique
+  mimeType     String
+  size         Int
+  // Inline bytes are used when ATTACHMENT_STORAGE=database (for example on
+  // Netlify, where the function filesystem is ephemeral). Null for files
+  // stored on disk by the local/Docker driver.
+  data         Bytes?
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  record     DataRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  uploadedBy User       @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  @@index([recordId])
+}
+
+// ---------------------------------------------------------------------------
+// Administration & observability
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  actorId    String?
+  action     AuditAction
+  entityType String
+  entityId   String?
+  summary    String
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime    @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId])
+  @@index([action, createdAt])
+}
+
+model SystemSetting {
+  key         String   @id
+  value       Json
+  description String?
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+
+  updatedBy User? @relation("SettingsUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+}
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  email     String
+  ipAddress String?
+  success   Boolean
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+  @@index([ipAddress, createdAt])
+}

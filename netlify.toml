@@ -1,0 +1,16 @@
+[build]
+  command = "npx prisma generate && npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NEXT_TELEMETRY_DISABLED = "1"
+
+# Netlify installs the Next.js runtime automatically. Declaring it here pins
+# the integration and makes the deployment reproducible.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[functions]
+  # Keep the Supabase CA bundle available for drivers that use sslrootcert.
+  included_files = ["certs/**"]
