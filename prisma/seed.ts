@@ -1080,7 +1080,7 @@ async function main() {
     },
     {
       key: "company.timezone",
-      value: "UTC",
+      value: process.env.COMPANY_TIMEZONE ?? "Asia/Kolkata",
       description: "Timezone used for business dates and reporting.",
     },
     {

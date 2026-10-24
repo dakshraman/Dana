@@ -213,7 +213,7 @@ npx prisma studio                           # browse the database
 | `AUTH_SECRET` | Yes | Auth.js signing/encryption secret. Generate with `openssl rand -base64 32`. |
 | `AUTH_URL` | Production | Canonical app URL, e.g. `https://ops.example.com`. |
 | `AUTH_TRUST_HOST` | Behind proxy | Set `true` when the app runs behind a trusted reverse proxy/load balancer. |
-| `COMPANY_TIMEZONE` | No | Fallback IANA timezone until settings are saved. Defaults to `UTC`. |
+| `COMPANY_TIMEZONE` | No | Fallback IANA timezone until settings are saved. Defaults to `Asia/Kolkata`. |
 | `UPLOAD_DIR` | No | Private attachment directory, relative to the project root. Defaults to `./storage/attachments`. Must be writable and persisted. |
 | `MAX_UPLOAD_MB` | No | Per-attachment size limit. Defaults to `10`. |
 

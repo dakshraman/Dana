@@ -20,7 +20,7 @@ export type SystemSettings = {
 
 export const DEFAULT_SETTINGS: SystemSettings = {
   companyName: "Dana Company",
-  timezone: process.env.COMPANY_TIMEZONE ?? "UTC",
+  timezone: process.env.COMPANY_TIMEZONE ?? "Asia/Kolkata",
   allowSelfApproval: false,
   overdueDays: 7,
 }

@@ -5,12 +5,13 @@
 [build.environment]
   NODE_VERSION = "22"
   NEXT_TELEMETRY_DISABLED = "1"
+  # Supabase's CA chain is a public certificate, not a credential. It lives in
+  # certs/ for local sslrootcert use and is supplied to functions at runtime
+  # via DATABASE_SSL_CA, so exclude the files from Netlify's secret scan.
+  SECRETS_SCAN_OMIT_PATHS = "certs/**"
+  SECRETS_SCAN_OMIT_KEYS = "DATABASE_SSL_CA"
 
 # Netlify installs the Next.js runtime automatically. Declaring it here pins
 # the integration and makes the deployment reproducible.
 [[plugins]]
   package = "@netlify/plugin-nextjs"
-
-[functions]
-  # Keep the Supabase CA bundle available for drivers that use sslrootcert.
-  included_files = ["certs/**"]
