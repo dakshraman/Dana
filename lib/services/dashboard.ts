@@ -1,6 +1,12 @@
 import "server-only"
 
 import { branchScopeWhere, userScopeWhere } from "@/lib/access"
+import {
+  addDays,
+  companyDateOnly,
+  companyDayStart,
+  companyMonthStart,
+} from "@/lib/company-time"
 import { prisma } from "@/lib/db"
 import { Prisma } from "@/lib/generated/prisma/client"
 import type { ApprovalAction } from "@/lib/generated/prisma/enums"
@@ -209,8 +215,8 @@ export async function getDashboardData(
   const granularity = resolveGranularity(filters.granularity)
   const { from, to } = resolveRange(filters.from, filters.to)
   const toExclusive = addDaysUtc(to, 1)
-  const today = startOfDayUtc(generatedAt)
-  const tomorrow = addDaysUtc(today, 1)
+  const today = companyDayStart(generatedAt)
+  const tomorrow = addDays(today, 1)
   const categoryId = cleanText(filters.categoryId, 64)
   const status = resolveStatus(filters.status)
   const branchId = cleanText(filters.branchId, 64)
@@ -264,16 +270,17 @@ export async function getDashboardData(
   }
 
   const overdueDays = Math.max(0, Math.floor(settings.overdueDays))
-  const overdueCutoff = addDaysUtc(today, -overdueDays)
+  // Drafts are overdue by elapsed time, while a branch's last activity is a
+  // date-only business date, so keep the two cutoffs distinct.
+  const overdueCutoff = addDays(today, -overdueDays)
+  const overdueDateCutoff = addDays(companyDateOnly(generatedAt), -overdueDays)
 
-  const monthStart = new Date(
-    Date.UTC(generatedAt.getUTCFullYear(), generatedAt.getUTCMonth(), 1)
-  )
+  const monthStart = companyMonthStart(generatedAt)
   const nextMonthStart = new Date(
-    Date.UTC(generatedAt.getUTCFullYear(), generatedAt.getUTCMonth() + 1, 1)
+    Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 1)
   )
   const lastMonthStart = new Date(
-    Date.UTC(generatedAt.getUTCFullYear(), generatedAt.getUTCMonth() - 1, 1)
+    Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() - 1, 1)
   )
 
   const [
@@ -509,7 +516,7 @@ export async function getDashboardData(
     .filter(
       (branch) =>
         branch.lastRecordDate === null ||
-        branch.lastRecordDate.getTime() < overdueCutoff.getTime()
+        branch.lastRecordDate.getTime() < overdueDateCutoff.getTime()
     )
     .sort((a, b) => {
       if (a.lastRecordDate === null && b.lastRecordDate === null) {
@@ -791,7 +798,7 @@ function resolveStatus(value: string | undefined): RecordStatusValue | null {
 }
 
 function resolveRange(fromValue?: string, toValue?: string) {
-  const today = startOfDayUtc(new Date())
+  const today = companyDateOnly(new Date())
   let to = parseIsoDate(toValue) ?? today
   let from = parseIsoDate(fromValue) ?? addDaysUtc(to, -(DEFAULT_RANGE_DAYS - 1))
 
@@ -847,6 +854,8 @@ function enumerateBuckets(
   to: Date,
   granularity: DashboardGranularity
 ): string[] {
+  // Buckets are business dates stored as UTC midnight, so UTC getters are the
+  // correct calendar arithmetic here; only "now" is resolved in company time.
   const buckets: string[] = []
   let cursor: Date
 

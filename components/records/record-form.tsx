@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { errorMessage, fieldErrors, patchJson, postJson } from "@/lib/client-api"
+import { companyDateOnly } from "@/lib/company-time"
 import { humanizeEnum, toDateInputValue } from "@/lib/format"
 
 export type RecordFieldDefinition = {
@@ -60,7 +61,7 @@ function optionsFor(field: RecordFieldDefinition): string[] {
 }
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10)
+  return companyDateOnly(new Date()).toISOString().slice(0, 10)
 }
 
 export function RecordForm({

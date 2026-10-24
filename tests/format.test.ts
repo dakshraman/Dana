@@ -18,15 +18,16 @@ import {
 } from "@/lib/format"
 
 describe("date formatting", () => {
-  it("renders dates in UTC regardless of the runtime timezone", () => {
-    expect(formatDate("2026-10-23T23:30:00.000Z")).toBe("Oct 23, 2026")
-    expect(
-      formatDateTime("2026-10-23T23:30:00.000Z")
-    ).toBe("Oct 23, 2026, 23:30")
+  it("renders timestamps in India Standard Time", () => {
+    expect(formatDate("2026-10-23T23:30:00.000Z")).toBe("Oct 24, 2026")
+    expect(formatDateTime("2026-10-23T23:30:00.000Z")).toBe(
+      "Oct 24, 2026, 05:00"
+    )
   })
 
   it("treats ISO strings without an offset as UTC", () => {
     expect(formatDate("2026-01-01T00:30:00")).toBe("Jan 1, 2026")
+    expect(formatDateTime("2026-01-01T00:30:00")).toBe("Jan 1, 2026, 06:00")
   })
 
   it("returns the fallback for missing or invalid values", () => {
@@ -34,9 +35,12 @@ describe("date formatting", () => {
     expect(formatDate("not-a-date", { fallback: "n/a" })).toBe("n/a")
   })
 
-  it("produces date input values", () => {
+  it("produces date input values in company time", () => {
     expect(toDateInputValue(new Date("2026-07-04T12:00:00.000Z"))).toBe(
       "2026-07-04"
+    )
+    expect(toDateInputValue(new Date("2026-07-04T20:00:00.000Z"))).toBe(
+      "2026-07-05"
     )
   })
 })

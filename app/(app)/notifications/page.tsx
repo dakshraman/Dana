@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Button } from "@/components/ui/button"
 import { prisma } from "@/lib/db"
+import { formatDateTime } from "@/lib/format"
 import { requirePageUser } from "@/lib/session"
 import { cn } from "@/lib/utils"
 import {
@@ -147,7 +148,7 @@ export default async function NotificationsPage({
                     {item.message}
                   </p>
                   <p className="mt-1.5 font-mono text-[10px] text-muted-foreground">
-                    {item.createdAt.toISOString().replace("T", " ").slice(0, 16)} UTC
+                    {formatDateTime(item.createdAt)} IST
                   </p>
                 </div>
               </div>

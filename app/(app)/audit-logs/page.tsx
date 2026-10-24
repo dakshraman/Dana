@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table"
 import { prisma } from "@/lib/db"
 import type { AuditAction } from "@/lib/generated/prisma/enums"
+import { formatDateTime } from "@/lib/format"
 import { requirePageScope } from "@/lib/session"
 
 export const metadata: Metadata = { title: "Audit logs" }
@@ -237,7 +238,7 @@ export default async function AuditLogsPage({
               {items.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="font-mono text-[11px] whitespace-nowrap text-muted-foreground">
-                    {item.createdAt.toISOString().replace("T", " ").slice(0, 19)}
+                    {formatDateTime(item.createdAt)} IST
                   </TableCell>
                   <TableCell>
                     <span className="block text-xs font-medium">

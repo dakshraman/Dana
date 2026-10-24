@@ -248,7 +248,7 @@ export default async function DashboardPage({
             Reset
           </Button>
           <span className="ml-auto hidden text-[10px] tracking-wider text-muted-foreground uppercase sm:block">
-            Generated {formatDateTime(data.generatedAt)} UTC
+            Generated {formatDateTime(data.generatedAt)} IST
           </span>
         </div>
       </form>
@@ -369,7 +369,7 @@ export default async function DashboardPage({
                         <span className="font-mono text-xs">{item.recordNumber}</span>
                       </p>
                       <p className="truncate text-xs text-muted-foreground">
-                        {item.branchName} · {formatDateTime(item.createdAt)} UTC
+                        {item.branchName} · {formatDateTime(item.createdAt)} IST
                       </p>
                     </div>
                   </li>

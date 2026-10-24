@@ -65,15 +65,17 @@ export function GeneralSettingsForm({ settings }: { settings: SystemSettings }) 
           label="Timezone"
           htmlFor="timezone"
           required
-          description="IANA timezone used for business dates and reporting."
+          description="Business dates and timestamps are rendered in India Standard Time (IST)."
           error={errors.timezone?.[0]}
         >
           <Input
             id="timezone"
             value={timezone}
             onChange={(event) => setTimezone(event.target.value)}
-            placeholder="UTC"
+            placeholder="Asia/Kolkata"
             maxLength={80}
+            readOnly
+            className="bg-muted/40 text-muted-foreground"
           />
         </FormField>
 

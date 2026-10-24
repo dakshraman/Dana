@@ -1,13 +1,17 @@
 /**
  * Presentation formatting helpers.
  *
- * Locale and timezone are pinned so server and client output match. Dates are
- * rendered in UTC by default; the company timezone can be layered on later.
+ * Locale and timezone are pinned so server and client output match. Timestamps
+ * are rendered in the company timezone (India Standard Time), which has a
+ * fixed offset and therefore needs no timezone database or library.
+ *
  * This module is framework free and safe to use from server components,
  * client components, and tests.
  */
 import { format, formatDistanceStrict } from "date-fns"
 import { enUS } from "date-fns/locale/en-US"
+
+import { COMPANY_TIME_OFFSET_MS } from "@/lib/company-time"
 
 export type DateInput = Date | string | number | null | undefined
 
@@ -56,20 +60,22 @@ function toDate(value: DateInput): Date | null {
 
 /**
  * date-fns renders using local getters. Constructing a Date whose local fields
- * match the UTC fields produces a stable UTC value without a timezone library.
+ * match the company-time fields produces stable output on any machine without a
+ * timezone library.
  */
-function toUtcWallClock(date: Date): Date {
+function toCompanyWallClock(date: Date): Date {
+  const shifted = new Date(date.getTime() + COMPANY_TIME_OFFSET_MS)
   const wallClock = new Date(0)
   wallClock.setFullYear(
-    date.getUTCFullYear(),
-    date.getUTCMonth(),
-    date.getUTCDate()
+    shifted.getUTCFullYear(),
+    shifted.getUTCMonth(),
+    shifted.getUTCDate()
   )
   wallClock.setHours(
-    date.getUTCHours(),
-    date.getUTCMinutes(),
-    date.getUTCSeconds(),
-    date.getUTCMilliseconds()
+    shifted.getUTCHours(),
+    shifted.getUTCMinutes(),
+    shifted.getUTCSeconds(),
+    shifted.getUTCMilliseconds()
   )
   return wallClock
 }
@@ -89,7 +95,7 @@ export function formatDate(
   const date = toDate(value)
   if (!date) return fallback
 
-  return format(toUtcWallClock(date), pattern, { locale: enUS })
+  return format(toCompanyWallClock(date), pattern, { locale: enUS })
 }
 
 export function formatDateTime(
@@ -209,7 +215,7 @@ export function formatFileSize(bytes: number): string {
   return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unit]}`
 }
 
-/** Value suitable for `<input type="date" />` (`yyyy-MM-dd`, UTC). */
+/** Value suitable for `<input type="date" />` (`yyyy-MM-dd`, company time). */
 export function toDateInputValue(value: DateInput): string {
   return formatDate(value, { pattern: "yyyy-MM-dd", fallback: "" })
 }

@@ -1,6 +1,7 @@
 import "server-only"
 
 import { branchScopeWhere, recordScopeWhere } from "@/lib/access"
+import { shiftToCompanyTime } from "@/lib/company-time"
 import { prisma } from "@/lib/db"
 import type { Prisma } from "@/lib/generated/prisma/client"
 import type { FieldType } from "@/lib/generated/prisma/enums"
@@ -670,5 +671,6 @@ function formatDateOnly(value: Date): string {
 }
 
 function formatDateTime(value: Date): string {
-  return `${formatDateOnly(value)} ${value.toISOString().slice(11, 16)}`
+  const shifted = shiftToCompanyTime(value)
+  return `${formatDateOnly(shifted)} ${shifted.toISOString().slice(11, 16)}`
 }

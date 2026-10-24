@@ -161,7 +161,7 @@ describe("CSV export", () => {
   it("builds deterministic export filenames", () => {
     expect(
       defaultExportFilename("csv", new Date("2026-03-04T05:06:00.000Z"))
-    ).toBe("dana-records-20260304-0506.csv")
+    ).toBe("dana-records-20260304-1036.csv")
   })
 })
 

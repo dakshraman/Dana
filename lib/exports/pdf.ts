@@ -3,6 +3,7 @@ import "server-only"
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib"
 
 import { formatIsoDate } from "@/lib/format"
+import { COMPANY_TIME_LABEL, shiftToCompanyTime } from "@/lib/company-time"
 import type {
   ExportCellValue,
   ExportColumn,
@@ -199,10 +200,11 @@ export async function buildReportPdf(
       color: INK,
     })
 
-    const generated = `${sanitizePdfText(meta.generatedBy)} · ${meta.generatedAt
-      .toISOString()
-      .replace("T", " ")
-      .slice(0, 16)} UTC · ${rows.length} record${rows.length === 1 ? "" : "s"}`
+    const generated = `${sanitizePdfText(meta.generatedBy)} · ${formatExportTimestamp(
+      meta.generatedAt
+    )} ${COMPANY_TIME_LABEL} · ${rows.length} record${
+      rows.length === 1 ? "" : "s"
+    }`
     page.drawText(generated, {
       x: left,
       y: PAGE_HEIGHT - 70,
@@ -733,8 +735,8 @@ function exportCellText(value: ExportCellValue | undefined): string {
 }
 
 function formatExportTimestamp(value: Date): string {
-  const iso = value.toISOString()
-  return `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`
+  const iso = shiftToCompanyTime(value).toISOString()
+  return `${iso.slice(0, 10)} ${iso.slice(11, 16)}`
 }
 
 function clampExportWidth(value: number, min: number, max: number): number {
