@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -58,27 +59,29 @@ export function UserMenu({ name, email, role }: UserMenuProps) {
         </span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">
-        <DropdownMenuLabel>
-          <span className="block truncate text-xs font-semibold tracking-normal text-foreground normal-case">
-            {name}
-          </span>
-          <span className="mt-0.5 block truncate text-[11px] font-normal tracking-normal text-muted-foreground normal-case">
-            {email}
-          </span>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem render={<Link href="/account" />}>
-          <UserRound className="size-4" />
-          Profile &amp; settings
-        </DropdownMenuItem>
-        <DropdownMenuItem render={<Link href="/notifications" />}>
-          <Bell className="size-4" />
-          Notifications
-        </DropdownMenuItem>
-        <DropdownMenuItem render={<Link href="/account#security" />}>
-          <Settings className="size-4" />
-          Security
-        </DropdownMenuItem>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>
+            <span className="block truncate text-xs font-semibold tracking-normal text-foreground normal-case">
+              {name}
+            </span>
+            <span className="mt-0.5 block truncate text-[11px] font-normal tracking-normal text-muted-foreground normal-case">
+              {email}
+            </span>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem render={<Link href="/account" />}>
+            <UserRound className="size-4" />
+            Profile &amp; settings
+          </DropdownMenuItem>
+          <DropdownMenuItem render={<Link href="/notifications" />}>
+            <Bell className="size-4" />
+            Notifications
+          </DropdownMenuItem>
+          <DropdownMenuItem render={<Link href="/account#security" />}>
+            <Settings className="size-4" />
+            Security
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           variant="destructive"
